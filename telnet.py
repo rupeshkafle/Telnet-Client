@@ -54,6 +54,10 @@ while loggedin == False:
                     break
 
 tn.write(b"show interface brief\r\n")
+
+"""Reads output from telnet line by line and automatically scrolls if there are
+    more output to fetch on screen
+"""
 while True:
     tnResponse = tn.read_until(b"\r\n", 2)
     print(tnResponse.decode('ascii'))
