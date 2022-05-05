@@ -19,6 +19,7 @@ while loggedin == False:
     password = getpass.getpass()
 
     tn = telnetlib.Telnet(host)
+    tn.set_debuglevel(1)
 
     tn.expect(USERNAME_PROMPTS)
     tn.write(username.encode('ascii') + b"\r\n")
@@ -53,7 +54,23 @@ while loggedin == False:
                     privileged = True
                     break
 
-tn.write(b"show interface brief\r\n")
+
+def BdcomShowInterface():
+    return tn.write(b"show interface brief\r\n")
+
+
+def ShowFunctions(i):
+    actions = {
+        1: BdcomShowInterface(),
+        2: 'Error'
+    }
+    return actions.get(i, "Invalid Input")
+
+
+print("1. Show Interfaces\r\n")
+option = input("Choose a option: ")
+print(ShowFunctions(option))
+
 
 """Reads output from telnet line by line and automatically scrolls if there are
     more output to fetch on screen
