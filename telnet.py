@@ -1,7 +1,9 @@
-import sys
-import getpass
-import telnetlib
+from ast import match_case
 import time
+import telnetlib
+import getpass
+from bdcom import BdcomEpon
+from bdcom import BdcomGpon
 
 # HOST = "127.0.0.1"
 USERNAME_PROMPTS = [b"Username:", b"login:"]
@@ -14,13 +16,30 @@ loggedin = False
 havemore = False
 host = input("Enter Hostname: ")
 
+
+def CheckPrivilegedMode():
+    if ">" in isFailed:
+        privileged = False
+        tn.write(b"enable\r\n")
+        time.sleep(2)  # wait 2 seconds before going to next code
+        var = tn.read_eager()
+        if b"#" in var:
+            privileged = True
+        while not privileged:
+            enablepassword = input("Enter enable password: ")
+            tn.write(enablepassword.encode('ascii') + b"\r\n")
+            time.sleep(2)
+            var = tn.read_eager()
+            if b"#" in var:
+                privileged = True
+                break
+
+
 while loggedin == False:
     username = input("Username: ")
     password = getpass.getpass()
 
     tn = telnetlib.Telnet(host)
-    tn.set_debuglevel(1)
-
     tn.expect(USERNAME_PROMPTS)
     tn.write(username.encode('ascii') + b"\r\n")
     tn.expect(PASSWORD_PROMPTS)
@@ -36,40 +55,59 @@ while loggedin == False:
         print("Authentication Failed")
     else:
         loggedin = True
+        CheckPrivilegedMode()
 
-        # Check for  privileged mode
-        if ">" in isFailed:
-            privileged = False
-            tn.write(b"enable\r\n")
-            time.sleep(2)  # wait 2 seconds before going to next code
-            var = tn.read_eager()
-            if b"#" in var:
-                privileged = True
-            while not privileged:
-                enablepassword = input("Enter enable password: ")
-                tn.write(enablepassword.encode('ascii') + b"\r\n")
-                time.sleep(2)
-                var = tn.read_eager()
-                if b"#" in var:
-                    privileged = True
-                    break
+olt = BdcomEpon()
 
 
-def BdcomShowInterface():
-    return tn.write(b"show interface brief\r\n")
+def ReadOperations(i):
+    match i:
+        case "1":
+            return tn.write(olt.showInterface)
+        case "2":
+            return tn.write(olt.showMacTable)
+        case "3":
+            return tn.write(olt.showActiveOnu)
+        case "4":
+            return tn.write(olt.showInactiveOnu)
+        case "5":
+            return tn.write(olt.showRejectedOnu)
+        case "6":
+            return tn.write(olt.showOnuInfo)
+        case default:
+            pass
 
 
-def ShowFunctions(i):
-    actions = {
-        1: BdcomShowInterface(),
-        2: 'Error'
-    }
-    return actions.get(i, "Invalid Input")
+def ShowReadOpeartions():
+    print("1. Show Interfaces\r\n")
+    print("2. Show Mac Address Table\r\n")
+    print("3. Show Active Onu\r\n")
+    print("4. Show Inactive Onu\r\n")
+    print("5. Show Rejected Onu\r\n")
+    print("6. Show Onu Information\r\n")
+    option = input("Choose a option: ")
+
+    return print(ReadOperations(option))
 
 
-print("1. Show Interfaces\r\n")
-option = input("Choose a option: ")
-print(ShowFunctions(option))
+def ShowWriteOperations():
+    return print("Feature Under Development")
+
+
+def ShowMainMenu():
+    print("1. Read Operations\r\n")
+    print("2. Write Operations\r\n")
+    option = input("Choose a operation: ")
+    match option:
+        case "1":
+            ShowReadOpeartions()
+        case "2":
+            ShowWriteOperations()
+        case default:
+            ShowMainMenu()
+
+
+ShowMainMenu()
 
 
 """Reads output from telnet line by line and automatically scrolls if there are
